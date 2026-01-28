@@ -1,0 +1,7 @@
+{
+  "name": "Hidalgo Transportes MVP",
+  "description": "Sistema de gestión logística mobile-first para operadores, repartidores y administradores. Incluye escaneo de etiquetas, control de estados y prueba de entrega.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

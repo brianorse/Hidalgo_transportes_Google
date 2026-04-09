@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Shipment, ShipmentStatus } from '../types';
-import { STATUS_CONFIG } from '../constants';
+import { getStatusConfig } from '../constants';
 import { Search, MapPin } from 'lucide-react';
 
 interface ShipmentListProps {
@@ -19,9 +19,10 @@ const ShipmentList: React.FC<ShipmentListProps> = ({ shipments, onSelect, initia
   }, [initialFilter]);
 
   const filtered = shipments.filter(s => {
-    const matchesSearch = s.referencia_externa.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         s.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         s.destino.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (s.referencia_externa || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         (s.cliente_nombre || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (s.destino_poblacion || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (s.destino_calle || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = activeStatus === 'TODO' || s.estado === activeStatus;
     return matchesSearch && matchesStatus;
   });
@@ -58,7 +59,7 @@ const ShipmentList: React.FC<ShipmentListProps> = ({ shipments, onSelect, initia
                 activeStatus === status ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-500 border-gray-100'
               }`}
             >
-              {STATUS_CONFIG[status].label}
+              {getStatusConfig(status).label}
             </button>
           ))}
         </div>
@@ -76,18 +77,18 @@ const ShipmentList: React.FC<ShipmentListProps> = ({ shipments, onSelect, initia
               onClick={() => onSelect(s.id)}
               className="w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-start gap-3 hover:shadow-md transition active:bg-gray-50"
             >
-              <div className={`p-3 rounded-xl ${STATUS_CONFIG[s.estado].color}`}>
-                {STATUS_CONFIG[s.estado].icon}
+              <div className={`p-3 rounded-xl ${getStatusConfig(s.estado).color}`}>
+                {getStatusConfig(s.estado).icon}
               </div>
               <div className="flex-1 text-left min-w-0">
                 <div className="flex justify-between items-start mb-1">
                   <span className="text-xs font-mono font-bold text-gray-400">{s.referencia_externa}</span>
-                  <span className="text-[10px] text-gray-400 font-medium">{new Date(s.fecha).toLocaleDateString()}</span>
+                  <span className="text-[10px] text-gray-400 font-medium">{new Date(s.fecha_entrega_estimada).toLocaleDateString()}</span>
                 </div>
-                <h4 className="font-bold text-gray-800 truncate">{s.cliente}</h4>
+                <h4 className="font-bold text-gray-800 truncate">{s.cliente_nombre}</h4>
                 <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
                   <MapPin size={12} className="flex-shrink-0" />
-                  <span className="truncate">{s.destino}</span>
+                  <span className="truncate">{s.destino_calle}, {s.destino_poblacion}</span>
                 </div>
               </div>
             </button>

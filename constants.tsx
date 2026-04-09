@@ -42,3 +42,12 @@ export const STATUS_CONFIG: Record<ShipmentStatus, { label: string; color: strin
     icon: <RotateCcw size={16} /> 
   },
 };
+
+export const getStatusConfig = (status: string | undefined) => {
+  const s = (status || '').toUpperCase() as ShipmentStatus;
+  return STATUS_CONFIG[s] || { 
+    label: status || 'Desconocido', 
+    color: 'bg-slate-100 text-slate-500', 
+    icon: <AlertTriangle size={16} /> 
+  };
+};

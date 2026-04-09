@@ -12,7 +12,6 @@
     <meta name="theme-color" content="#0B1E3B">
 
     <title>Hidalgo Transportes</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
@@ -20,37 +19,21 @@
         body { font-family: 'Inter', sans-serif; }
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
     </style>
-    <script>
-        tailwind.config = {
-          theme: {
-            extend: {
-              colors: {
-                brand: {
-                  dark: '#0B1E3B',
-                  cyan: '#00C7D1',
-                  orange: '#FF6D4D',
-                  light: '#F8FAFC'
-                }
-              },
-              fontFamily: {
-                sans: ['Inter', 'sans-serif'],
-              }
-            }
-          }
-        }
-    </script>
 <script type="importmap">
 {
   "imports": {
     "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.7"
   }
 }
 </script>
+<link rel="stylesheet" href="/index.css">
 </head>
 <body class="bg-slate-50 text-slate-900 overflow-x-hidden">
     <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
 </body>
 </html>

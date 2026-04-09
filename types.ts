@@ -41,22 +41,45 @@ export interface POD {
   fecha: string;
 }
 
+export interface Package {
+  id: string;
+  shipment_id: string;
+  peso: number;
+  volumen: number;
+  descripcion?: string;
+  created_at: string;
+}
+
 export interface Shipment {
   id: string;
   referencia_externa: string;
   origen: string;
-  destino: string;
-  cliente: string;
-  fecha: string;
+  // Dirección detallada
+  destino_calle: string;
+  destino_codigo_postal: string;
+  destino_poblacion: string;
+  destino_provincia: string;
+  destino_pais: string;
+  
+  cliente_nombre: string;
+  cliente_telefono: string;
+  cliente_email?: string;
+  
+  fecha_entrega_estimada: string; // delivery_date
   franja_horaria: string;
-  bultos: number;
-  peso: number;
+  
+  // Totales calculados
+  total_bultos: number;
+  total_peso: number;
+  total_volumen: number;
+  
   notas: string;
   estado: ShipmentStatus;
   repartidor_id?: string;
   repartidor_nombre?: string;
   pod?: POD;
   etiqueta_url?: string;
+  packages?: Package[]; // Lista detallada de bultos
   created_at: string;
   updated_at: string;
 }

@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { User, Role, Shipment, ShipmentStatus } from '../types';
 import { ArrowLeft, UserPlus, Trash2, Mail, Shield, X, Package, CheckCircle, AlertTriangle, Truck, Key } from 'lucide-react';
 import { STATUS_CONFIG } from '../constants';
+import { supabase } from '../supabaseClient';
+import bcrypt from 'bcryptjs';
 
 interface UserManagementProps {
   users: User[];
@@ -20,30 +22,62 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, setUsers, shipme
   const [showPwdReset, setShowPwdReset] = useState(false);
   const [newAdminPwd, setNewAdminPwd] = useState('');
 
-  const handleAddUser = (e: React.FormEvent) => {
+  const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    const created: User = {
-      id: Math.random().toString(36).substr(2, 9),
+    
+    // Auto-append domain if simple username is provided
+    const finalEmail = newUser.email.includes('@') ? newUser.email : `${newUser.email}@hidalgo.app`;
+
+    const tempId = Math.random().toString(36).substr(2, 9);
+    const newUserObj = {
       nombre: newUser.nombre,
-      email: newUser.email,
+      email: finalEmail,
       rol: newUser.rol,
       activo: true,
-      password_hash: '123',
+      password_hash: bcrypt.hashSync('hidalgo123', 10), // Hashed default password
       created_at: new Date().toISOString()
     };
-    setUsers([...users, created]);
-    setShowAdd(false);
-    setNewUser({ nombre: '', email: '', rol: Role.REPARTIDOR });
+
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .insert([newUserObj])
+        .select('id, nombre, email, rol, activo, foto_url, fecha_nacimiento, created_at')
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setUsers([...users, data as User]);
+        setShowAdd(false);
+        setNewUser({ nombre: '', email: '', rol: Role.REPARTIDOR });
+        alert(`Usuario creado exitosamente: ${finalEmail}`);
+      }
+    } catch (error: any) {
+      console.error("Error creating user:", error);
+      alert(`Error al crear usuario: ${error.message}`);
+    }
   };
 
-  const handleAdminResetPassword = () => {
+  const handleAdminResetPassword = async () => {
     if (!selectedUser || !newAdminPwd) return;
-    setUsers(prev => prev.map(u => 
-      u.id === selectedUser.id ? { ...u, password_hash: newAdminPwd } : u
-    ));
-    alert(`Contraseña de ${selectedUser.nombre} actualizada.`);
-    setShowPwdReset(false);
-    setNewAdminPwd('');
+
+    try {
+      const hashedPassword = bcrypt.hashSync(newAdminPwd, 10);
+      const { error } = await supabase
+        .from('users')
+        .update({ password_hash: hashedPassword })
+        .eq('id', selectedUser.id);
+
+      if (error) throw error;
+
+      alert(`Contraseña de ${selectedUser.nombre} actualizada correctamente.`);
+      setShowPwdReset(false);
+      setNewAdminPwd('');
+    } catch (error: any) {
+      console.error("Error resetting password:", error);
+      alert(`Error al actualizar contraseña: ${error.message}`);
+    }
   };
 
   const getDriverStats = (userId: string) => {
@@ -87,15 +121,15 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, setUsers, shipme
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold overflow-hidden">
                 {u.foto_url ? (
-                  <img src={u.foto_url} alt={u.nombre} className="w-full h-full object-cover" />
+                  <img src={u.foto_url} alt={u.nombre || 'User'} className="w-full h-full object-cover" />
                 ) : (
-                  u.nombre.charAt(0)
+                  (u.nombre || 'U').charAt(0)
                 )}
               </div>
               <div>
-                <h4 className="font-bold text-gray-800">{u.nombre}</h4>
+                <h4 className="font-bold text-gray-800">{u.nombre || 'Sin nombre'}</h4>
                 <div className="flex items-center gap-3 mt-0.5">
-                  <span className="text-xs text-gray-400 flex items-center gap-1"><Mail size={12}/> {u.email}</span>
+                  <span className="text-xs text-gray-400 flex items-center gap-1"><Mail size={12}/> {(u.email || '').replace('@hidalgo.app', '')}</span>
                   <span className={`text-xs font-bold flex items-center gap-1 ${u.rol === Role.ADMIN ? 'text-purple-500' : 'text-blue-500'}`}>
                     <Shield size={12}/> {u.rol}
                   </span>
@@ -131,15 +165,15 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, setUsers, shipme
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-brand-cyan rounded-full flex items-center justify-center text-brand-dark text-2xl font-bold overflow-hidden border-2 border-white/20">
                   {selectedUser.foto_url ? (
-                    <img src={selectedUser.foto_url} alt={selectedUser.nombre} className="w-full h-full object-cover" />
+                    <img src={selectedUser.foto_url} alt={selectedUser.nombre || 'User'} className="w-full h-full object-cover" />
                   ) : (
-                    selectedUser.nombre.charAt(0)
+                    (selectedUser.nombre || 'U').charAt(0)
                   )}
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold">{selectedUser.nombre}</h3>
+                  <h3 className="text-xl font-bold">{selectedUser.nombre || 'Sin nombre'}</h3>
                   <p className="text-brand-cyan text-sm flex items-center gap-2">
-                    <Truck size={14} /> {extractZone(selectedUser.nombre)}
+                    <Truck size={14} /> {extractZone(selectedUser.nombre || '')}
                   </p>
                 </div>
               </div>
@@ -222,7 +256,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, setUsers, shipme
                           stats.recent.map(s => (
                             <div key={s.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
                               <div>
-                                <p className="text-xs font-bold text-gray-700">{s.cliente}</p>
+                                <p className="text-xs font-bold text-gray-700">{s.cliente_nombre}</p>
                                 <p className="text-[10px] text-gray-400">{new Date(s.updated_at).toLocaleDateString()}</p>
                               </div>
                               <span className={`text-[10px] px-2 py-1 rounded-lg font-bold ${STATUS_CONFIG[s.estado].color}`}>
@@ -270,14 +304,16 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, setUsers, shipme
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-400 uppercase">Email</label>
+                <label className="text-xs font-bold text-gray-400 uppercase">Usuario / Email</label>
                 <input 
-                  type="email" 
+                  type="text" 
                   value={newUser.email}
-                  onChange={e => setNewUser({...newUser, email: e.target.value})}
+                  onChange={e => setNewUser({...newUser, email: e.target.value.trim()})}
                   className="w-full p-2 border-b outline-none focus:border-blue-500" 
+                  placeholder="Ej: ivan o ivan@empresa.com"
                   required
                 />
+                <p className="text-[10px] text-gray-400 mt-1">Si no usas @, se añadirá @hidalgo.app automáticamente.</p>
               </div>
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase">Rol</label>

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Shipment, ShipmentStatus } from '../types';
-import { STATUS_CONFIG } from '../constants';
+import { getStatusConfig } from '../constants';
 import { MapPin, ChevronRight, Scan } from 'lucide-react';
 
 interface DashboardRepartidorProps {
@@ -47,15 +47,15 @@ const DashboardRepartidor: React.FC<DashboardRepartidorProps> = ({ shipments, on
               >
                 <div className="flex flex-col items-start text-left">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${STATUS_CONFIG[s.estado].color}`}>
-                      {STATUS_CONFIG[s.estado].label}
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${getStatusConfig(s.estado).color}`}>
+                      {getStatusConfig(s.estado).label}
                     </span>
                     <span className="text-xs font-medium text-slate-400">Ref: {s.referencia_externa}</span>
                   </div>
-                  <h4 className="font-bold text-slate-800 line-clamp-1">{s.cliente}</h4>
+                  <h4 className="font-bold text-slate-800 line-clamp-1">{s.cliente_nombre}</h4>
                   <div className="flex items-center gap-1 text-sm text-slate-500 mt-1">
                     <MapPin size={14} className="text-brand-orange" />
-                    <span className="line-clamp-1">{s.destino}</span>
+                    <span className="line-clamp-1">{s.destino_poblacion}, {s.destino_calle}</span>
                   </div>
                 </div>
                 <div className="bg-slate-50 p-2 rounded-lg group-hover:bg-brand-cyan group-hover:text-white transition-colors">
@@ -73,7 +73,7 @@ const DashboardRepartidor: React.FC<DashboardRepartidorProps> = ({ shipments, on
           <div className="space-y-2 opacity-60">
             {completed.map(s => (
               <div key={s.id} className="bg-slate-50 p-3 rounded-xl flex items-center justify-between border border-slate-100">
-                <span className="text-sm font-medium text-slate-600">{s.cliente}</span>
+                <span className="text-sm font-medium text-slate-600">{s.cliente_nombre}</span>
                 <span className="text-xs text-green-600 font-bold bg-green-50 px-2 py-1 rounded">ENTREGADO</span>
               </div>
             ))}

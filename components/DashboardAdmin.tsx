@@ -22,9 +22,10 @@ const DashboardAdmin: React.FC<DashboardAdminProps> = ({ stats, onNavigate, onAs
 
   const pendingAssignment = stats.shipments.filter(s => 
     s.estado === ShipmentStatus.PENDIENTE &&
-    (s.cliente.toLowerCase().includes(filterText.toLowerCase()) || 
-     s.destino.toLowerCase().includes(filterText.toLowerCase()) ||
-     s.referencia_externa.toLowerCase().includes(filterText.toLowerCase()))
+    ((s.cliente_nombre || '').toLowerCase().includes(filterText.toLowerCase()) || 
+     (s.destino_poblacion || '').toLowerCase().includes(filterText.toLowerCase()) ||
+     (s.destino_calle || '').toLowerCase().includes(filterText.toLowerCase()) ||
+     (s.referencia_externa || '').toLowerCase().includes(filterText.toLowerCase()))
   );
   
   const drivers = stats.users.filter(u => u.rol === Role.REPARTIDOR);
@@ -148,10 +149,10 @@ const DashboardAdmin: React.FC<DashboardAdminProps> = ({ stats, onNavigate, onAs
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between">
-                    <h4 className="font-bold text-slate-700 text-sm truncate">{s.destino}</h4>
+                    <h4 className="font-bold text-slate-700 text-sm truncate">{s.destino_poblacion}</h4>
                     <span className="text-[10px] font-mono text-slate-400">{s.referencia_externa}</span>
                   </div>
-                  <p className="text-xs text-slate-500 truncate">{s.cliente} • {s.bultos} bultos</p>
+                  <p className="text-xs text-slate-500 truncate">{s.cliente_nombre} • {s.total_bultos} bultos</p>
                 </div>
               </div>
             ))

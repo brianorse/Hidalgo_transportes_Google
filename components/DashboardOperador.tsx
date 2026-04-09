@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Shipment, ShipmentStatus } from '../types';
-import { STATUS_CONFIG } from '../constants';
+import { getStatusConfig } from '../constants';
 import { Search, Filter, ArrowRight, UserPlus, AlertCircle } from 'lucide-react';
 
 interface DashboardOperadorProps {
@@ -14,8 +14,8 @@ const DashboardOperador: React.FC<DashboardOperadorProps> = ({ shipments, onSele
   const [filter, setFilter] = useState('');
 
   const filtered = shipments.filter(s => 
-    s.referencia_externa.toLowerCase().includes(filter.toLowerCase()) || 
-    s.cliente.toLowerCase().includes(filter.toLowerCase())
+    (s.referencia_externa || '').toLowerCase().includes(filter.toLowerCase()) || 
+    (s.cliente_nombre || '').toLowerCase().includes(filter.toLowerCase())
   );
 
   const pendingCount = shipments.filter(s => s.estado === ShipmentStatus.PENDIENTE).length;
@@ -68,12 +68,12 @@ const DashboardOperador: React.FC<DashboardOperadorProps> = ({ shipments, onSele
             >
               <div className="text-left flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${STATUS_CONFIG[s.estado].color}`}>
-                    {STATUS_CONFIG[s.estado].label}
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${getStatusConfig(s.estado).color}`}>
+                    {getStatusConfig(s.estado).label}
                   </span>
                   <span className="text-xs font-mono text-slate-400">#{s.referencia_externa}</span>
                 </div>
-                <h4 className="font-bold text-slate-800 truncate">{s.cliente}</h4>
+                <h4 className="font-bold text-slate-800 truncate">{s.cliente_nombre}</h4>
                 <div className="flex items-center gap-1 mt-1">
                   {s.repartidor_nombre ? (
                     <span className="text-xs text-slate-500 flex items-center gap-1">

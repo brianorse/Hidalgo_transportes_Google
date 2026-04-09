@@ -8,7 +8,7 @@ import {
   TrackingEvent,
   POD
 } from '../types';
-import { STATUS_CONFIG } from '../constants';
+import { getStatusConfig } from '../constants';
 import { 
   ArrowLeft, 
   Phone, 
@@ -25,6 +25,8 @@ import {
   FileText
 } from 'lucide-react';
 
+import { generateShipmentLabel } from '../services/labelService';
+
 interface ShipmentDetailProps {
   shipment: Shipment;
   events: TrackingEvent[];
@@ -32,6 +34,7 @@ interface ShipmentDetailProps {
   drivers: User[];
   onUpdateStatus: (id: string, status: ShipmentStatus, note?: string, pod?: POD) => void;
   onAssignDriver: (shipmentId: string, driverId: string) => void;
+  onUpdateShipment: (id: string, updates: Partial<Shipment>) => void;
   onBack: () => void;
 }
 
@@ -42,6 +45,7 @@ const ShipmentDetail: React.FC<ShipmentDetailProps> = ({
   drivers, 
   onUpdateStatus, 
   onAssignDriver, 
+  onUpdateShipment,
   onBack 
 }) => {
   const [showAssign, setShowAssign] = useState(false);
@@ -50,6 +54,7 @@ const ShipmentDetail: React.FC<ShipmentDetailProps> = ({
   const [photoData, setPhotoData] = useState<string | null>(null);
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [isSigning, setIsSigning] = useState(false);
+  const [isGeneratingLabel, setIsGeneratingLabel] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -148,6 +153,20 @@ const ShipmentDetail: React.FC<ShipmentDetailProps> = ({
     }
   };
 
+  const handleGenerateLabel = async () => {
+    try {
+      setIsGeneratingLabel(true);
+      const labelUrl = await generateShipmentLabel(shipment);
+      onUpdateShipment(shipment.id, { etiqueta_url: labelUrl });
+      alert('Etiqueta generada correctamente');
+    } catch (error) {
+      console.error('Error generating label:', error);
+      alert('Error al generar la etiqueta');
+    } finally {
+      setIsGeneratingLabel(false);
+    }
+  };
+
   const handleStatusUpdate = (status: ShipmentStatus) => {
     if (status === ShipmentStatus.ENTREGADO && !showPod) {
       setShowPod(true);
@@ -179,10 +198,10 @@ const ShipmentDetail: React.FC<ShipmentDetailProps> = ({
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
-        <div className={`p-4 flex items-center justify-between border-b ${STATUS_CONFIG[shipment.estado].color}`}>
+        <div className={`p-4 flex items-center justify-between border-b ${getStatusConfig(shipment.estado).color}`}>
           <div className="flex items-center gap-2">
-            {STATUS_CONFIG[shipment.estado].icon}
-            <span className="font-bold">{STATUS_CONFIG[shipment.estado].label}</span>
+            {getStatusConfig(shipment.estado).icon}
+            <span className="font-bold">{getStatusConfig(shipment.estado).label}</span>
           </div>
           <span className="text-xs opacity-75">{new Date(shipment.updated_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
@@ -193,12 +212,25 @@ const ShipmentDetail: React.FC<ShipmentDetailProps> = ({
             <div className="flex items-start gap-3">
               <div className="p-2 bg-blue-50 rounded-lg text-blue-600"><MapPin size={20}/></div>
               <div>
-                <p className="font-bold text-gray-800">{shipment.cliente}</p>
-                <p className="text-gray-600 text-sm">{shipment.destino}</p>
-                <div className="flex gap-2 mt-2">
-                  <button className="flex items-center gap-1 text-xs bg-gray-100 px-3 py-1.5 rounded-full font-bold text-gray-600 hover:bg-gray-200">
-                    <Phone size={14}/> LLAMAR
-                  </button>
+                <p className="font-bold text-gray-800">{shipment.cliente_nombre}</p>
+                <p className="text-gray-600 text-sm">{shipment.destino_calle}</p>
+                <p className="text-gray-600 text-sm">{shipment.destino_codigo_postal} {shipment.destino_poblacion}</p>
+                <p className="text-gray-500 text-xs">{shipment.destino_provincia}, {shipment.destino_pais}</p>
+                
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {shipment.cliente_telefono && (
+                    <a 
+                      href={`tel:${shipment.cliente_telefono}`}
+                      className="flex items-center gap-1 text-xs bg-gray-100 px-3 py-1.5 rounded-full font-bold text-gray-600 hover:bg-gray-200"
+                    >
+                      <Phone size={14}/> {shipment.cliente_telefono}
+                    </a>
+                  )}
+                  {shipment.cliente_email && (
+                    <div className="flex items-center gap-1 text-xs bg-gray-100 px-3 py-1.5 rounded-full font-bold text-gray-600">
+                      <FileText size={14}/> {shipment.cliente_email}
+                    </div>
+                  )}
                   <button className="flex items-center gap-1 text-xs bg-blue-100 px-3 py-1.5 rounded-full font-bold text-blue-600 hover:bg-blue-200">
                     VER MAPA
                   </button>
@@ -209,27 +241,64 @@ const ShipmentDetail: React.FC<ShipmentDetailProps> = ({
 
           <section className="grid grid-cols-2 gap-4">
             <div>
-              <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Paquete</h3>
+              <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Resumen Carga</h3>
               <div className="flex items-center gap-2 text-sm text-gray-700 mb-2">
                 <Package size={16}/>
-                <span>{shipment.bultos} bultos / {shipment.peso}kg</span>
+                <span>{shipment.total_bultos} bultos / {shipment.total_peso}kg</span>
               </div>
-              {shipment.etiqueta_url && (
-                <a 
-                  href={shipment.etiqueta_url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100 font-bold hover:bg-blue-100"
-                >
-                  <FileText size={12}/> VER ETIQUETA
-                </a>
-              )}
+              <div className="text-[10px] text-gray-500 mb-2">Volumen total: {shipment.total_volumen} m³</div>
+              <div className="flex flex-wrap gap-2">
+                {shipment.etiqueta_url ? (
+                  <a 
+                    href={shipment.etiqueta_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100 font-bold hover:bg-blue-100"
+                  >
+                    <FileText size={12}/> VER ETIQUETA
+                  </a>
+                ) : (userRole === Role.ADMIN || userRole === Role.OPERADOR) && (
+                  <button 
+                    onClick={handleGenerateLabel}
+                    disabled={isGeneratingLabel}
+                    className="inline-flex items-center gap-1 text-[10px] bg-brand-orange text-white px-2 py-1 rounded font-bold hover:bg-orange-600 disabled:opacity-50"
+                  >
+                    <FileText size={12}/> {isGeneratingLabel ? 'GENERANDO...' : 'GENERAR ETIQUETA'}
+                  </button>
+                )}
+                {shipment.etiqueta_url && (userRole === Role.ADMIN || userRole === Role.OPERADOR) && (
+                  <button 
+                    onClick={handleGenerateLabel}
+                    disabled={isGeneratingLabel}
+                    className="text-[10px] text-gray-400 hover:text-blue-600 font-bold"
+                  >
+                    REGENERAR
+                  </button>
+                )}
+              </div>
             </div>
             <div>
-              <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Horario</h3>
-              <div className="text-sm text-gray-700">{shipment.franja_horaria}</div>
+              <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Entrega Estimada</h3>
+              <div className="text-sm font-bold text-gray-700">{new Date(shipment.fecha_entrega_estimada).toLocaleDateString()}</div>
+              <div className="text-xs text-gray-500 mt-1">{shipment.franja_horaria}</div>
             </div>
           </section>
+
+          {shipment.packages && shipment.packages.length > 0 && (
+            <section>
+              <h3 className="text-xs font-bold text-gray-400 uppercase mb-3">Detalle de Bultos</h3>
+              <div className="space-y-2">
+                {shipment.packages.map((pkg, idx) => (
+                  <div key={idx} className="bg-gray-50 p-3 rounded-xl border border-gray-100 flex justify-between items-center">
+                    <div>
+                      <p className="text-sm font-bold text-gray-700">{pkg.descripcion || `Bulto ${idx + 1}`}</p>
+                      <p className="text-[10px] text-gray-500">{pkg.peso}kg | {pkg.volumen}m³</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {shipment.pod && (
             <section className="bg-green-50 p-4 rounded-xl border border-green-100">
